@@ -21,27 +21,28 @@
 
 ## ✨ Highlights
 
-| 🚀 **Feature** | 📖 **Description** |
-|---|---|
-| **Real-Time SOC Dashboard** | Executive KPIs, live anomaly feed, attack timeline — updates every 3-5s |
-| **AI Investigation Agent** | LangGraph-powered RAG agent with 7+ specialized sub-agents |
-| **MITRE ATT&CK Mapping** | Interactive coverage map with expandable tactic/technique browser |
-| **IOC Intelligence** | Searchable indicator-of-compromise library with confidence scoring |
-| **Event Sourcing** | Complete audit trail of every security event across your infrastructure |
-| **Kafka-First Architecture** | Fully event-driven with CQRS patterns and GraphQL subscriptions |
-| **Graceful Degradation** | Frontend works offline with zero backend dependency — mock data fallback |
+| 🚀 Feature                      | 📖 Description                                                                                                             |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **📊 Executive Dashboard**      | Monitor security posture with live metrics, critical alerts, risk trends and investigation statistics in one unified view. |
+| **🤖 AI Investigation Engine**  | Agentic AI powered by LangGraph and RAG that analyzes incidents, correlates evidence and generates investigation reports.  |
+| **⚡ Real-Time Event Streaming** | Event-driven architecture built on Apache Kafka for low-latency processing and scalable communication between services.    |
+| **🗺️ Attack Timeline**         | Visualize and replay security events in chronological order to understand the complete attack lifecycle.                   |
+| **🎯 Threat Intelligence**      | Explore MITRE ATT&CK techniques, Indicators of Compromise (IOCs) and enriched security context from a single workspace.    |
+| **🔍 Semantic Search**          | Combine OpenSearch and vector retrieval to discover related events, historical patterns and contextual information.        |
+| **🧩 GraphQL Federation**       | Multiple domain services composed into a single API, enabling efficient data aggregation and real-time subscriptions.      |
+| **📈 Enterprise Observability** | Integrated monitoring with Prometheus and Grafana for infrastructure, service health and event processing visibility.      |
 
-## 🧠 Why SOCup AI?
+---
 
-> *"Most SOC tools are either dashboards that look pretty but can't investigate, or AI toys that hallucinate without context. SOCup AI is both — and it works when your backend doesn't."*
+# 🧠 Why SOCup AI?
 
-### 🏢 Enterprise-Ready, Developer-Friendly
-- **📉 Zero Backend Dependency** — The frontend works fully offline with inline mock data. Start building UI before the backend exists.
-- **🔌 Event-Driven Core** — Apache Kafka powers all inter-service communication. No REST, just events and GraphQL.
-- **🧩 GraphQL Federation** — Each domain owns its subgraph. The gateway composes them into a unified API.
-- **🤖 Multi-Agent AI** — Inspired by modern SOC analyst workflows: Supervisor → Threat Analyst → Forensic Investigator → MITRE Mapper → Response Planner → Report Generator → Confidence Scorer.
-- **🛡️ FAANG-Level Practices** — CQRS, Event Sourcing, OpenTelemetry tracing, dead letter queues, and retry with exponential backoff.
+Modern security teams work with thousands of events every minute, spread across multiple dashboards, log systems and investigation tools.
 
+SOCup AI brings everything together into a single AI-native platform that helps analysts investigate incidents faster, correlate security data intelligently and understand attack behavior in real time.
+
+Built around distributed systems and event-driven architecture, the platform combines modern backend engineering with practical AI workflows for security operations.
+
+---
 ## 📸 Screenshots
 
 | Page | Preview |
@@ -55,196 +56,214 @@
 | **Threat Intelligence** |(<img width="1865" height="961" alt="Screenshot from 2026-06-13 17-48-00" src="https://github.com/user-attachments/assets/85c29310-1a34-4636-830a-17334c0354a4" />
 ) |
 
-## 🏗️ Architecture
+# 🏗️ Architecture
+
+SOCup AI follows an **event-driven microservice architecture** where every security event flows through Apache Kafka and is processed independently by specialized services.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     🌐 Frontend (Next.js)                    │
-│  Dashboard · Timeline · Investigations · Threat Intel       │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │ 🔌 GraphQL Client (mock fallback + 3-state conn)     │   │
-│  └──────────────────────────────────────────────────────┘   │
-└────────────────────────┬────────────────────────────────────┘
-                         │ ⬆ Subscriptions (WebSocket)
-                         │ ⬇ Queries / Mutations
-┌────────────────────────▼────────────────────────────────────┐
-│               🚪 GraphQL Federation Gateway                  │
-└──┬──────────────┬──────────────┬────────────────┬───────────┘
-   │              │              │                │
-   ▼              ▼              ▼                ▼
-┌──────┐    ┌────────┐    ┌──────────┐    ┌──────────┐
-│Auth  │    │Alerts  │    │Timeline  │    │Analytics │
-│SG    │    │SG      │    │SG        │    │SG        │
-└──────┘    └───┬────┘    └────┬─────┘    └──────────┘
-                │              │
-         ┌──────▼──────────────▼──────┐
-         │     📨 Apache Kafka         │
-         │  threat-analysis-requests   │
-         │  threat-analysis-results    │
-         │  audit-events               │
-         └──────┬──────────────────────┘
-                │
-         ┌──────▼──────┐
-         │ 🤖 AI Agent │
-         │  (Worker)   │
-         └─────────────┘
+                           🌐 Next.js Dashboard
+                                    │
+                       GraphQL Queries & Subscriptions
+                                    │
+                     🚪 Apollo GraphQL Federation Gateway
+                                    │
+        ┌──────────────┬──────────────┬──────────────┐
+        │              │              │              │
+   🔐 Auth        ⚠️ Alerts      📜 Timeline    📊 Analytics
+        │              │              │              │
+        └──────────────┴───────┬──────┴──────────────┘
+                               │
+                     📨 Apache Kafka Event Bus
+                               │
+              ┌────────────────┼────────────────┐
+              │                                 │
+      🤖 AI Investigation Agent         📈 Future Services
+      LangGraph • RAG • Skills
+                               │
+     PostgreSQL • Redis • OpenSearch • Qdrant
 ```
 
-## 🗂️ Project Structure
+---
+
+# 📂 Repository Structure
 
 ```
-📦 socup.ai
+socup-ai/
+
 ├── apps/
-│   ├── web/              # 🖥️ Next.js Frontend Dashboard
-│   └── gateway/          # 🚪 GraphQL Federation Gateway
+│   ├── web/                 # Next.js Dashboard
+│   └── gateway/             # Apollo Federation Gateway
+│
 ├── services/
-│   ├── auth/             # 🔐 Authentication & Identity
-│   ├── alerts/           # ⚠️ Alerting Service
-│   ├── timeline/         # 📜 Attack Timeline (Event Sourcing)
-│   ├── investigation/    # 🔍 Investigation Workspace
-│   ├── analytics/        # 📊 Risk Engine & Analytics
-│   └── notifications/    # 📬 Notifications & Delivery
+│   ├── auth/
+│   ├── alerts/
+│   ├── timeline/
+│   ├── investigation/
+│   ├── analytics/
+│   └── notifications/
+│
 ├── agents/
-│   └── security-agent/   # 🧠 Core AI Investigation Engine
+│   └── security-agent/      # LangGraph + RAG Engine
+│
 ├── libs/
-│   ├── events/           # 📨 Shared Kafka Event Schemas
-│   ├── graphql/          # 📡 GraphQL Shared Definitions
-│   └── shared/           # 🔧 Common Utilities
+│   ├── graphql/
+│   ├── events/
+│   └── shared/
+│
 └── infra/
-    ├── docker/           # 🐳 Docker Compose Configs
-    ├── kubernetes/       # ☸️ K8s Manifests
-    └── monitoring/       # 📈 Prometheus & Grafana
+    ├── docker/
+    ├── kubernetes/
+    └── monitoring/
 ```
 
-## 🚀 Quick Start
+---
 
-### Prerequisites
-- **Docker** & **Docker Compose** (for infra)
-- **Node.js 18+** & **npm** (for frontend)
-- **Python 3.11+** (for AI agent)
-
-### 1. Start Infrastructure
-```bash
-docker-compose up -d
-```
-*Starts: PostgreSQL · Redis · OpenSearch · Qdrant · Kafka · Prometheus · Grafana*
-
-### 2. Start the Frontend
-```bash
-cd apps/web
-npm install
-npm run dev
-```
-
-### 3. Start Backend Services
-```bash
-# Alerts subgraph
-cd services/alerts && python main.py
-
-# Timeline subgraph
-cd services/timeline && python main.py
-
-# AI Agent worker
-cd agents/security-agent && docker-compose up
-```
-
-### 4. Open the Dashboard
-→ [**http://localhost:3000**](http://localhost:3000)
-
-*The frontend renders immediately with demo data. Connect backend services for live data.*
-
-### 5. (Optional) Start Gateway
-```bash
-cd apps/gateway && npm run dev
-```
-
-## 🎯 Core Features
+# 🎯 Core Modules
 
 ### 📊 Executive Dashboard
-- **KPI Cards** — Active threats, events analyzed, agent actions, risk score
-- **Live Anomalies** — Real-time alert feed with severity coloring and glow effects
-- **Attack Timeline** — Reverse-chronological event log across all infrastructure
-- **AI Agent Console** — Natural language threat analysis interface
 
-### 🔍 Investigation Workspace
-- **Open Cases** — Severity-sorted alert list with click-to-investigate
-- **AI Investigation Agent** — RAG-powered analysis with live output console
-- **Threat Escalation** — One-click pipeline from alert to deep investigation
+A unified security overview providing:
+
+* Live security metrics
+* Risk distribution
+* Critical alerts
+* Investigation statistics
+* AI activity feed
+
+---
+
+### 🤖 AI Investigation Engine
+
+An agent-based investigation workflow powered by LangGraph.
+
+```
+Question
+
+↓
+
+Supervisor
+
+↓
+
+Threat Analyst
+
+↓
+
+Forensic Investigator
+
+↓
+
+MITRE Mapper
+
+↓
+
+Response Planner
+
+↓
+
+Investigation Report
+```
+
+---
 
 ### 📜 Attack Timeline
-- **Event Injector** — Manually inject test events for simulation
-- **Chronological View** — Time-ordered replay with colored event types
-- **Timeline Visualization** — Connected dot-and-line event flow
+
+Visualize and replay security events across your infrastructure with chronological event correlation and investigation history.
+
+---
 
 ### 🧠 Threat Intelligence
-- **MITRE ATT&CK Coverage** — Interactive tactics map with expandable technique lists
-- **IOC Library** — Searchable indicators with confidence scoring and threat levels
-- **Adversary Profiling** — Correlate IOCs to known threat actors
 
-## 🧪 Graceful Degradation
+Explore MITRE ATT&CK techniques, IOC libraries, adversary information and contextual threat intelligence from one interface.
 
-SOCup AI is designed for unstable environments. Every page works in **three states**:
+---
 
-```
-🟢 Connected    → Live data from GraphQL gateway
-🟡 Degraded     → Cached data (transient failure, <15s)
-⚫ Offline      → Full mock data (gateway unreachable >15s)
-```
+# 🛠️ Technology Stack
 
-The `ConnectionStatus` component shows the current state at all times. When offline, the UI is indistinguishable from live — except for a gray indicator in the header.
+| Layer              | Technologies                                   |
+| ------------------ | ---------------------------------------------- |
+| 🎨 Frontend        | Next.js · React · TypeScript · Tailwind CSS    |
+| 🔌 API             | Apollo GraphQL Federation · Strawberry GraphQL |
+| 📨 Event Streaming | Apache Kafka                                   |
+| 🤖 AI              | LangGraph · LangChain · Ollama · RAG           |
+| 🔍 Search          | OpenSearch                                     |
+| 🧠 Vector Database | Qdrant                                         |
+| 🗄️ Data           | PostgreSQL · Redis                             |
+| 📈 Observability   | Prometheus · Grafana · OpenTelemetry           |
+| 🐳 Infrastructure  | Docker · Kubernetes Ready                      |
 
-## 🛣️ Roadmap
+---
 
-- [ ] **🔌 Wire Kafka Consumers** into alerts/timeline subgraphs (currently in-memory)
-- [ ] **🗄️ PostgreSQL Persistence** with SQLAlchemy + Alembic migrations
-- [ ] **📡 GraphQL Subscriptions** via WebSocket (replace polling)
-- [ ] **🤖 Multi-Agent AI Pipeline** — 7 specialized agents in LangGraph
-- [ ] **🔍 OpenTelemetry** — Distributed tracing with Jaeger/Tempo
-- [ ] **🔄 Dead Letter Queues** — Kafka retry with exponential backoff
-- [ ] **⌨️ Cmd+K Palette** — Keyboard-first command interface
-- [ ] **🕸️ Neo4j Attack Graph** — D3.js force-directed visualization
-- [ ] **⚡ FAANG Review** — Address 10 architectural improvement items
+# 🌟 Engineering Highlights
 
-## 🧰 Tech Stack
+* ⚡ Event-Driven Microservices
+* 🧩 GraphQL Federation
+* 🤖 Agentic AI Architecture
+* 🔍 Retrieval-Augmented Generation
+* 📊 Real-Time Investigation Dashboard
+* 📨 Kafka Event Streaming
+* 📜 Event Sourcing Timeline
+* 🧠 Semantic Search & Vector Retrieval
+* 📈 Enterprise Observability
+* 🏗️ Modular Service Design
 
-| Category | Technology |
-|---|---|
-| **Frontend** | Next.js 15.5, React 19, TypeScript 5.8, Tailwind CSS v4 |
-| **API Layer** | GraphQL Federation, Strawberry (Python), WebSockets |
-| **Messaging** | Apache Kafka (Confluent) |
-| **AI/ML** | LangGraph, LangChain, RAG, ChromaDB, Ollama |
-| **Storage** | PostgreSQL, Redis, OpenSearch, Qdrant (Vector DB), Neo4j |
-| **Observability** | OpenTelemetry, Prometheus, Grafana, Jaeger |
-| **Infrastructure** | Docker, Kubernetes (Helm/Kustomize) |
-| **Languages** | TypeScript, Python, Rust, Go |
+---
 
-## 🤝 Contributing
+# 📚 Documentation
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+| Document            | Description             |
+| ------------------- | ----------------------- |
+| **PROJECT.md**      | Local development guide |
+| **ARCHITECTURE.md** | High-level architecture |
+| **DETAILS.md**      | Technical deep dive     |
+| **WORKFLOW.md**     | Integration workflows   |
 
-1. Fork the repo
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m '✨ Add amazing feature'`)
-4. Push (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+---
 
-## 📄 License
+# 🚀 Project Vision
 
-Distributed under the **MIT License**. See [LICENSE](LICENSE) for more.
+SOCup AI explores how modern Security Operations Centers can combine:
 
-## 📬 Contact & Community
+* Event-Driven Architecture
+* GraphQL Federation
+* Agentic AI
+* Vector Search
+* Distributed Systems
+* Real-Time Analytics
 
-- **GitHub Issues** — Report bugs or request features
-- **Pull Requests** — Contributions welcome
-- **Security Concerns** — [Security Policy](SECURITY.md)
+to build an intelligent and scalable security investigation platform.
+
+---
+
+# 🔮 Future Enhancements
+
+* 🕸️ Neo4j Attack Graph
+* ⚡ Event Replay Engine
+* 🤝 Multi-Agent Collaboration
+* 🔍 Distributed Tracing
+* ☁️ Kubernetes Production Deployment
+* 🏢 Multi-Tenant Organizations
+
+---
+
+# 🤝 Contributing
+
+Ideas, discussions and contributions are always welcome.
+
+If you enjoy distributed systems, AI agents or cybersecurity engineering, feel free to fork the project and build something even better.
+
+---
+
+# 📄 License
+
+Released under the **MIT License**.
 
 ---
 
 <div align="center">
-  
-**Made with ❤️ by the SOCup Team** · *Securing infrastructure, one event at a time.*
 
-[![Star](https://img.shields.io/github/stars/vaishnav4281/socup.ai?style=social)](https://github.com/vaishnav4281/socup.ai)
-[![Fork](https://img.shields.io/github/forks/vaishnav4281/socup.ai?style=social)](https://github.com/vaishnav4281/socup.ai)
+### ⭐ Star the repository if you found it useful.
+
+**Built with Next.js • GraphQL Federation • Apache Kafka • LangGraph • Python**
 
 </div>
