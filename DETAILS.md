@@ -84,7 +84,7 @@ SOCup AI provides:
 |---|---|---|
 | **Strawberry GraphQL** | Subgraph framework | Type-safe Python GraphQL with federation support |
 | **Python 3.12** | Runtime | Rich AI/ML ecosystem |
-| **Uvicorn** | ASGI server | Production-grade async server |
+| **Uvicorn** | ASGI server | Production-grade async server for GraphQL subgraphs |
 
 **No REST endpoints.** All inter-service communication is Kafka (async events) or GraphQL (synchronous queries/mutations).
 
@@ -340,7 +340,7 @@ Prometheus + Grafana for infrastructure monitoring. GraphQL Subscriptions for re
 ## 9. Skills Demonstrated
 
 ### Software Engineering
-- **Full-stack development**: Next.js → GraphQL → FastAPI → Databases
+- **Full-stack development**: Next.js → GraphQL Federation → Kafka → Python Agents → OpenSearch
 - **System design**: Event-driven microservices, CQRS, Federation
 - **API design**: GraphQL (queries, mutations, subscriptions), federation schema composition
 - **Security**: Input validation, path traversal prevention, CORS, secrets isolation

@@ -10,7 +10,7 @@ Unlike traditional monolithic dashboards, SOCup AI is built on a scalable, event
 
 - **Frontend:** Next.js (App Router), TypeScript, Tailwind CSS, Dark Enterprise UI
 - **Gateway:** GraphQL Federation & Subscriptions
-- **Backend:** FastAPI Microservices
+- **Backend:** GraphQL Subgraphs (Strawberry/FastAPI)
 - **Messaging:** Apache Kafka for Event-driven communication
 - **Storage:** PostgreSQL, Redis, OpenSearch, Qdrant (Vector DB)
 - **AI Engine:** Python-based Agentic frameworks (LangGraph, RAG)

@@ -15,7 +15,7 @@ This script will:
 4. Test that Ollama is reachable
 5. Launch both the Python backend and Vite web frontend in Docker
 
-The web UI will be available at `http://localhost:5173` and the API at `http://localhost:7799`.
+The Kafka worker will connect to the configured bootstrap servers and begin processing threat analysis requests.
 
 ## Classic Setup (CLI / Background Agent)
 
@@ -148,29 +148,20 @@ The agent will:
 - Build RAG context from normal behavior
 - Issue threat verdicts using the LLM
 
-### Step 6: (Recommended) Run the Web Service
+### Step 6: (Recommended) Run the Kafka Worker
 
-For the full interactive experience with the React web UI and REST API:
+For event-driven threat analysis via Kafka:
 
 ```bash
-.venv/bin/python main.py service
+.venv/bin/python main.py worker --bootstrap-servers localhost:9092
 ```
 
 This starts:
-- **Web UI** at `http://localhost:5173` (React frontend)
-- **REST API** at `http://localhost:7799` (FastAPI with streaming)
-- **Background scheduler** (anomaly watcher + memory builder)
+- **Kafka consumer** on `threat-analysis-requests` topic
+- **LangGraph engine** processing investigations and routing to skills
+- **Kafka producer** on `threat-analysis-results` topic
 
-The web interface provides:
-- **Chat panel** — Real-time LLM reasoning and skill routing
-- **Configuration editor** — Edit config.yaml and .env
-- **Skill management** — View skills, edit schedules, trigger manually
-- **Conversation history** — Browse and restore past sessions
-
-To start **API-only** (without the scheduler or frontend):
-```bash
-SOCUP_AI_API_ONLY=1 .venv/bin/python main.py service
-```
+The worker integrates with the GraphQL Gateway (`apps/gateway`) and the main Next.js dashboard (`apps/web`).
 
 ### Feature Maturity Notes
 

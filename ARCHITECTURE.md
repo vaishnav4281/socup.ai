@@ -13,7 +13,7 @@ SOCup AI is a massively scalable, event-driven enterprise Security Operations Ce
 * **Trade-off**: Requires maintaining two models (Write vs. Read) and eventual consistency, but allows us to aggressively cache the Read model in Redis for sub-millisecond dashboard renders while persisting immutable event arrays to PostgreSQL.
 
 ### 3. GraphQL Federation over Unified REST
-* **Decision**: Using an **Apollo Federation Gateway** to aggregate subgraphs from completely isolated FastAPI microservices.
+* **Decision**: Using an **Apollo Federation Gateway** to aggregate subgraphs from completely isolated GraphQL subgraph services.
 * **Trade-off**: Requires strict schema coordination between teams, but prevents the "backend-for-frontend (BFF) bottleneck" and allows UI developers to seamlessly request relational data (e.g., matching a Kafka `Alert` with a Postgres `User` identity) in a single request. 
 * **Real-time**: We leverage GraphQL Subscriptions (WebSockets) directly from the Gateway to stream real-time attacks onto the Next.js UI, bypassing polling.
 

@@ -1814,7 +1814,7 @@ def orchestrate_with_supervisor(
 ) -> dict:
     """Backward-compatible wrapper around :func:`run_graph`.
 
-    All existing callers (main.py, web/api/server.py, tests) continue to work
+    All existing callers (main.py, kafka_worker, tests) continue to work
     unchanged. New code should call ``run_graph`` directly to gain access to the
     ``checkpointer`` and ``thread_id`` parameters.
     """

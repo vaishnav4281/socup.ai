@@ -1,24 +1,16 @@
-# SOCup AI Web UI
+# SOCup AI Web UI (Legacy)
 
-React/Vite frontend and FastAPI backend for the SOCup AI service console.
+> **⚠️ DEPRECATED:** The standalone React/Vite frontend has been superseded by the Next.js dashboard at `apps/web/`.
 
-## Commands
+This directory contains the old standalone React/Vite chat UI for the SOCup AI agent.
 
-From the project root:
+## Architecture Change
 
-- `python main.py web-build` — install frontend dependencies and build the production UI
-- `python main.py web-dev` — run the Vite frontend in development mode
-- `python main.py service` — start the combined API + UI + scheduler service
-- `python main.py service --api-only` — start the API/UI without scheduled jobs
+The agent no longer runs a FastAPI REST server (`main.py service`). It now operates as a **Kafka worker** (`main.py worker`). The **main frontend** is the Next.js SOC dashboard:
+- **Dashboard**: `apps/web/` (Next.js, TypeScript, Tailwind)
+- **Gateway**: `apps/gateway/` (Apollo Federation, port 4000)
+- **GraphQL Subgraphs**: `services/alerts/`, `services/timeline/`
 
-## Structure
+## Legacy Reference
 
-- `web/api` — FastAPI backend used by `main.py service`
-- `web/src` — React frontend source
-- `web/dist` — built frontend output served by Python in production
-
-## Notes
-
-- Secrets remain in `.env` and are masked in the UI.
-- Skill schedules are read from `instruction.md` frontmatter.
-- Skill manifests and instructions are editable from the web UI.
+The old UI communicated with the agent REST API at `:7799`. That API has been removed. If you need this UI, you would need to connect it to the GraphQL Gateway at `:4000` instead.
