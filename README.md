@@ -15,7 +15,7 @@
 
 ---
 
-<img src="assets/dashboard.png" alt="SOCup AI Dashboard" width="100%"/>
+<img width="1865" height="961" alt="Screenshot from 2026-06-13 17-46-26" src="https://github.com/user-attachments/assets/827a664e-4072-4406-b6d4-14485c0da134" />
 
 </div>
 
@@ -46,10 +46,14 @@
 
 | Page | Preview |
 |---|---|
-| **Executive Dashboard** | ![Dashboard](assets/dashboard.png) |
-| **Attack Timeline** | ![Timeline](assets/timeline.png) |
-| **Investigation Workspace** | ![Investigation](assets/investigation.png) |
-| **Threat Intelligence** | ![Threat Intel](assets/threat-intel.png) |
+| **Executive Dashboard** | <img width="1865" height="961" alt="Screenshot from 2026-06-13 17-46-26" src="https://github.com/user-attachments/assets/c1f85e02-eb81-4d6a-b47e-45897e604237" />
+) |
+| **Attack Timeline** | (<img width="1865" height="961" alt="Screenshot from 2026-06-13 17-47-23" src="https://github.com/user-attachments/assets/7c64b07b-454a-4d4b-a3fa-1392d6f27cac" />
+) |
+| **Investigation Workspace** | (<img width="1865" height="961" alt="Screenshot from 2026-06-13 17-47-14" src="https://github.com/user-attachments/assets/483cc41f-4d1d-4d7d-b9dc-bfa7e6725cde" />
+) |
+| **Threat Intelligence** |(<img width="1865" height="961" alt="Screenshot from 2026-06-13 17-48-00" src="https://github.com/user-attachments/assets/85c29310-1a34-4636-830a-17334c0354a4" />
+) |
 
 ## 🏗️ Architecture
 
