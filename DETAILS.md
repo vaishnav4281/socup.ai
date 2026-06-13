@@ -28,9 +28,9 @@
 | **Type** | Enterprise SOC Platform + AI Investigation Engine |
 | **Architecture** | Event-driven Microservices + Agentic AI |
 | **Frontend** | Next.js 14+ (App Router), TypeScript, Tailwind CSS v4 |
-| **API Layer** | GraphQL Federation (Apollo) + REST (FastAPI) |
-| **Messaging** | Apache Kafka (Event-driven backbone) |
-| **Backend** | FastAPI microservices (Python) |
+| **API Layer** | GraphQL Federation (Apollo) only — no REST endpoints between services |
+| **Messaging** | Apache Kafka (Event-driven backbone, KRaft mode) |
+| **Backend** | Python microservices (Strawberry GraphQL subgraphs) |
 | **AI Engine** | LangGraph agent with RAG, skill routing, supervisor planning |
 | **Databases** | PostgreSQL, Redis, OpenSearch, Qdrant (Vector DB) |
 | **LLM Integration** | Ollama (local), extensible to OpenAI/Anthropic |
@@ -72,7 +72,7 @@ SOCup AI provides:
 | **Apollo Client** | GraphQL client | Real-time subscriptions, query caching |
 | **React 19** | UI library | Concurrent features, server components |
 
-### API & Gateway
+### API & Gateway (GraphQL Only)
 | Technology | Purpose | Why |
 |---|---|---|
 | **Apollo Federation** | GraphQL gateway | Compose multiple subgraphs into one endpoint |
@@ -82,9 +82,11 @@ SOCup AI provides:
 ### Backend Services
 | Technology | Purpose | Why |
 |---|---|---|
-| **FastAPI** | REST + GraphQL microservices | Async, auto-docs, high performance |
+| **Strawberry GraphQL** | Subgraph framework | Type-safe Python GraphQL with federation support |
 | **Python 3.12** | Runtime | Rich AI/ML ecosystem |
 | **Uvicorn** | ASGI server | Production-grade async server |
+
+**No REST endpoints.** All inter-service communication is Kafka (async events) or GraphQL (synchronous queries/mutations).
 
 ### AI Engine
 | Technology | Purpose | Why |
@@ -147,10 +149,10 @@ SOCup AI provides:
               └──────┬────────────────▲──────┘
                      │                │
               ┌──────▼────────────────┴──────┐
-              │    AI Agent (Python)         │
-              │  LangGraph · RAG · Skills    │
-              │  REST API :7799 · Scheduler  │
-              └──────┬────────────────┬──────┘
+               │    AI Agent (Python)         │
+               │  LangGraph · RAG · Skills    │
+               │  Kafka Worker · Scheduler   │
+               └──────┬────────────────┬──────┘
                      │                │
               ┌──────▼────┐    ┌──────▼──────┐
               │ OpenSearch│    │   Qdrant   │
@@ -315,9 +317,9 @@ Prometheus + Grafana for infrastructure monitoring. GraphQL Subscriptions for re
 **Challenge**: Vector similarity sometimes returned irrelevant context, confusing the LLM.
 **Solution**: Similarity threshold (0.65), top-K limiting (5), and query repair pipeline that validates and fixes malformed OpenSearch queries.
 
-### 3. Kafka Integration Complexity
-**Challenge**: Setting up Kafka with KRaft mode (no ZooKeeper) for local dev without schema registry.
-**Solution**: Bitnami Kafka image with KRaft configuration, simplified topic management, and graceful error handling for missing topics.
+### 3. Kafka Integration for Agent Worker
+**Challenge**: Rewriting the agent from a REST API service to a pure Kafka consumer/producer without losing LangGraph orchestration quality.
+**Solution**: Modular `AnalysisWorker` with configurable topics; same LangGraph pipeline; graceful fallback to mock data in the frontend when Kafka is unavailable.
 
 ### 4. Multi-Database Coordination
 **Challenge**: Keeping PostgreSQL, Redis, OpenSearch, and Qdrant in sync without distributed transactions.
@@ -331,18 +333,16 @@ Prometheus + Grafana for infrastructure monitoring. GraphQL Subscriptions for re
 **Challenge**: API endpoints accepting file paths from users.
 **Solution**: Strict input validation (alphanumeric only for IDs), resolved path verification against safe directory boundaries, 403 on violation.
 
-### 7. LLM Streaming Complexity
-**Challenge**: Streaming LLM tokens through FastAPI to the UI while maintaining supervisor trace visibility.
-**Solution**: SSE (Server-Sent Events) with multi-event protocol: `step` events for supervisor trace, `token` events for LLM text, `response` for final payload.
-
 ---
+
+
 
 ## 9. Skills Demonstrated
 
 ### Software Engineering
 - **Full-stack development**: Next.js → GraphQL → FastAPI → Databases
 - **System design**: Event-driven microservices, CQRS, Federation
-- **API design**: REST, GraphQL (queries, mutations, subscriptions), SSE streaming
+- **API design**: GraphQL (queries, mutations, subscriptions), federation schema composition
 - **Security**: Input validation, path traversal prevention, CORS, secrets isolation
 
 ### AI / Machine Learning
@@ -492,6 +492,132 @@ Key Pattern: rate_limit:{ip}:{endpoint} → request counter
 - `test_supervisor_skill_selection.py`: Tests routing decisions
 - `test_forensic_examiner_timeline.py`: Tests evidence gathering
 - Pytest with coverage reporting
+
+---
+
+---
+
+## 12. Complete File Structure
+
+```
+socup.ai/
+│
+├── apps/
+│   └── web/                          # Next.js Frontend Dashboard
+│       ├── src/
+│       │   ├── app/
+│       │   │   ├── page.tsx          # Executive Dashboard (live metrics, AI console)
+│       │   │   ├── layout.tsx        # Root layout (sidebar + header)
+│       │   │   ├── globals.css       # Tailwind + custom styles
+│       │   │   ├── timeline/
+│       │   │   │   └── page.tsx      # Attack timeline viewer
+│       │   │   ├── investigations/
+│       │   │   │   └── page.tsx      # Investigation workspace + AI agent console
+│       │   │   └── threat-intel/
+│       │   │       └── page.tsx      # MITRE ATT&CK + IOC browser
+│       │   ├── lib/
+│       │   │   └── graphql.ts        # Shared GraphQL client with mock data fallback
+│       │   └── components/
+│       │       ├── Sidebar.tsx        # Navigation sidebar
+│       │       └── ConnectionStatus.tsx  # Live/reachable/degraded indicator
+│       ├── package.json
+│       └── next.config.js
+│
+├── services/
+│   ├── gateway/                      # Apollo Federation Gateway
+│   │   └── src/index.ts             # Gateway composition, health checks
+│   ├── alerts/                       # Alerts Subgraph
+│   │   ├── src/
+│   │   │   ├── index.ts             # GraphQL schema + resolvers + Kafka consumer
+│   │   │   └── kafka.ts             # Kafka client utilities
+│   │   ├── package.json
+│   │   └── Dockerfile
+│   └── timeline/                     # Timeline Subgraph
+│       ├── src/
+│       │   ├── index.ts             # GraphQL schema + resolvers + Kafka consumer
+│       │   └── kafka.ts             # Kafka client utilities
+│       ├── package.json
+│       └── Dockerfile
+│
+├── agents/
+│   └── security-agent/               # AI Agent (LangGraph + RAG)
+│       ├── main.py                   # CLI entry: chat, worker, onboard, dispatch...
+│       ├── kafka_worker/
+│       │   └── __init__.py          # Kafka consumer/producer for threat analysis
+│       ├── core/
+│       │   ├── chat_router/          # LangGraph supervisor orchestration
+│       │   ├── config.py            # Application configuration
+│       │   ├── db_connector.py      # OpenSearch connector
+│       │   ├── llm_provider.py      # Ollama/LLM provider
+│       │   ├── rag_engine.py        # Vector search + context
+│       │   ├── runner.py            # Agent lifecycle
+│       │   ├── memory.py            # Checkpoint-backed memory
+│       │   ├── skill_loader.py      # Skill discovery
+│       │   └── scheduler.py         # Cron/interval scheduling
+│       ├── skills/                   # Modular skill plugins
+│       │   ├── anomaly_triage/
+│       │   ├── forensic_examiner/
+│       │   ├── threat_analyst/
+│       │   ├── geoip_lookup/
+│       │   ├── ip_fingerprinter/
+│       │   ├── network_baseliner/
+│       │   ├── opensearch_querier/
+│       │   ├── baseline_querier/
+│       │   └── fields_baseliner/
+│       ├── data/                     # SQLite conversations, port registry
+│       ├── tests/                    # 443 passing pytest tests
+│       ├── config.yaml               # Agent configuration
+│       ├── requirements.txt
+│       └── docker-compose.yml        # Worker + Kafka for agent
+│
+├── docker-compose.yml                # Full infra: Kafka, OpenSearch, Qdrant, etc.
+├── DETAILS.md                        # This file — full spec & design
+├── WORKFLOW.md                       # External system integration guide
+├── PROJECT.md                        # Local development setup
+├── ARCHITECTURE.md                   # High-level architecture overview
+└── README.md                         # Project entry point
+```
+
+---
+
+## 13. Resume-Ready Capabilities
+
+### For a Staff+ / Senior Engineer Role
+
+| Capability | Evidence in Codebase |
+|---|---|
+| **Event-Driven Architecture** | Kafka as sole inter-service bus; no REST between services; KRaft mode (no ZK) |
+| **GraphQL Federation** | Apollo Gateway composing subgraphs; Strawberry Python subgraphs; WebSocket subscriptions |
+| **Agentic AI (LangGraph)** | Multi-round supervisor planning; skill routing; question grounding; confidence scoring; streaming tokens |
+| **RAG Pipeline** | Vector embeddings in OpenSearch; KNN similarity search; query repair; context injection |
+| **Full-Stack Ownership** | Next.js App Router → GraphQL → Kafka → Python agents → OpenSearch |
+| **Graceful Degradation** | Frontend falls back to mock data when any backend is offline; three-state connection indicator |
+| **Plugin Architecture** | Hot-pluggable skills with manifest.yaml, instruction.md, hooks, LangGraph sub-graphs |
+| **Security** | Path traversal prevention; CORS; secrets isolation in .env; input sanitization on all endpoints |
+| **Testing** | 443 pytest tests; mock LLM + mock OpenSearch for deterministic AI testing; coverage reporting |
+| **Observability** | Prometheus metrics; Grafana dashboards; Kafka consumer lag monitoring |
+| **DevOps** | Multi-service Docker Compose; Kubernetes-ready manifests; CI/CD with GitHub Actions |
+
+### For an AI/ML Engineer Role
+
+| Capability | Evidence |
+|---|---|
+| **LangGraph State Machines** | `core/chat_router/logic.py` — supervisor agent with plan → execute → evaluate → replan |
+| **RAG Implementation** | `core/rag_engine.py` — embedding → KNN search → context assembly → LLM injection |
+| **LLM Integration** | `core/llm_provider.py` — Ollama provider with streaming, configurable models |
+| **Prompt Engineering** | 9+ `instruction.md` files across skills + chat router; multi-round supervisor prompts |
+| **Vector Databases** | OpenSearch dense_vector fields; Qdrant HNSW indices; configurable similarity thresholds |
+| **AI Observability** | Streaming LLM tokens; supervisor trace events; step-by-step decision logging |
+
+### For a Platform / Infrastructure Engineer Role
+
+| Capability | Evidence |
+|---|---|
+| **Microservices Architecture** | 6+ services with independent scaling, data stores, and lifecycles |
+| **Kafka Operations** | KRaft mode; topic management; consumer groups; partition-based parallelism |
+| **Multi-Database Strategy** | PostgreSQL (ACID), Redis (cache), OpenSearch (search), Qdrant (vectors) |
+| **Containerization** | Docker Compose for full stack; separate Dockerfiles per service |
+| **Monitoring** | Prometheus + Grafana stack; application metrics; Kafka JMX exporter |
 
 ---
 

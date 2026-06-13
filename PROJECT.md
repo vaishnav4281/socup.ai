@@ -62,17 +62,17 @@ Set:
 - Ollama URL: `http://localhost:11434`
 - Model: `llama3.2:3b` (or any model you pulled)
 
-### 4. Start the AI Agent Service
+### 4. Start the AI Agent Worker (Kafka Mode)
 
 ```bash
 cd agents/security-agent
-python main.py service --host 127.0.0.1 --port 7799
+python main.py worker
 ```
 
 This starts:
-- **REST API** at `http://127.0.0.1:7799`
-- **Background scheduler** for automated analysis
-- **Chat streaming endpoint** at `/api/chat/stream`
+- **Kafka consumer** on `threat-analysis-requests` topic
+- **LangGraph engine** processing investigations
+- **Kafka producer** on `threat-analysis-results` topic
 
 ### 5. Start GraphQL Microservices
 
@@ -148,26 +148,27 @@ The agent uses OpenSearch as a vector store. Embeddings are generated using `nom
 ## Architecture At a Glance
 
 ```
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  Next.js UI  │────▶│ GraphQL G/W  │────▶│ Microservices│
-│  (port 3000) │     │  (port 4000) │     │  (8xx1-8xx2) │
-└──────────────┘     └──────┬───────┘     └──────┬───────┘
-                            │                    │
-                            │           ┌────────▼────────┐
-                            │           │  Apache Kafka   │
-                            │           │  (Event Bus)    │
-                            │           └────────┬────────┘
-                            │                    │
-                     ┌──────▼────────────────────▼───────┐
-                     │       AI Agent (Python)           │
-                     │  LangGraph · RAG · Skills Engine   │
-                     │  API: 127.0.0.1:7799              │
-                     └──────┬────────────────────┬───────┘
-                            │                    │
-                     ┌──────▼──────┐    ┌────────▼────────┐
-                     │  OpenSearch │    │  Qdrant (Vector)│
-                     │  (Logs)     │    │  (RAG)          │
-                     └─────────────┘    └─────────────────┘
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐
+│  Next.js UI │────▶│ GraphQL G/W  │────▶│ GraphQL      │
+│  (port 3000)│     │  Apollo Fed  │     │ Subgraphs    │
+│             │     │  (port 4000) │     │  (8xx1-8xx2) │
+└─────────────┘     └──────┬───────┘     └──────┬───────┘
+                           │                    │
+                           │           ┌────────▼────────┐
+                           │           │  Apache Kafka   │
+                           │           │  (Event Bus)    │
+                           │           └────────┬────────┘
+                           │                    │
+                    ┌──────▼────────────────────▼───────┐
+                    │       AI Agent (Python)           │
+                    │  LangGraph · RAG · Skills Engine   │
+                    │  Kafka Worker (consumer/producer)  │
+                    └──────┬────────────────────┬───────┘
+                           │                    │
+                    ┌──────▼──────┐    ┌────────▼────────┐
+                    │  OpenSearch │    │  Qdrant (Vector)│
+                    │  (Logs)     │    │  (RAG)          │
+                    └─────────────┘    └─────────────────┘
 ```
 
 ---
@@ -176,8 +177,8 @@ The agent uses OpenSearch as a vector store. Embeddings are generated using `nom
 
 | File | Purpose |
 |---|---|
-| `agents/security-agent/main.py` | CLI entrypoint (chat, service, dispatch) |
-| `agents/security-agent/web/api/server.py` | FastAPI web server + REST endpoints |
+| `agents/security-agent/main.py` | CLI entrypoint (chat, worker, dispatch) |
+| `agents/security-agent/kafka_worker/__init__.py` | Kafka consumer/producer for analysis |
 | `agents/security-agent/core/chat_router/logic.py` | LangGraph orchestration |
 | `agents/security-agent/core/rag_engine.py` | RAG embedding & retrieval |
 | `services/alerts/main.py` | Alerts GraphQL subgraph |

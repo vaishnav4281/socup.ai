@@ -4,10 +4,8 @@ main.py — SOCup AI CLI entrypoint.
 Usage:
     python main.py onboard              # Interactive setup wizard
     python main.py run                  # Start full agent loop
-    python main.py service              # Start web service + API + scheduler
-    python main.py web-build            # Build the React frontend in /web
-    python main.py web-dev              # Start the frontend dev server
-    python main.py dispatch <skill>     # Fire a skill once
+    python main.py worker               # Start Kafka consumer worker (Kafka + GraphQL mode)
+    python main.py dispatch <skill>      # Fire a skill once
     python main.py chat                 # Interactive chat with skill routing
     python main.py status               # Print the compact agent memory snapshot
     python main.py list-skills          # List discovered skills
@@ -16,8 +14,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
-import subprocess
 import sys
 from importlib import import_module
 from pathlib import Path
@@ -321,10 +317,10 @@ def onboard():
 
     console.print("[green bold]✓ Configuration complete![/]")
     console.print("\n[cyan]You can now run:[/]")
-    console.print("  [yellow]python main.py chat[/]              # Start in chat mode")
-    console.print("  [yellow]python main.py service[/]              # Start the agent")
-    console.print("  [yellow]python main.py list-skills[/]      # See available skills")
-    console.print("  [yellow]python main.py dispatch <skill>[/] # Fire a skill\n")
+    console.print("  [yellow]python main.py chat                   # Start in chat mode")
+    console.print("  [yellow]python main.py worker                 # Start Kafka worker")
+    console.print("  [yellow]python main.py list-skills           # See available skills")
+    console.print("  [yellow]python main.py dispatch <skill>      # Fire a skill\n")
 
 
 @cli.command()
@@ -336,56 +332,40 @@ def run():
 
 
 @cli.command()
-@click.option("--host", default="0.0.0.0", show_default=True, help="Host interface for the web service")
-@click.option("--port", default=7799, show_default=True, type=int, help="Port for the web service")
-@click.option("--api-only", is_flag=True, help="Serve the API/UI without running scheduled skills")
-def service(host: str, port: int, api_only: bool):
-    """Start the web interface service (API + UI + optional scheduler)."""
-    from web.api.server import run_service
+@click.option("--bootstrap-servers", default="localhost:9092", show_default=True, help="Kafka bootstrap servers")
+@click.option("--request-topic", default="threat-analysis-requests", show_default=True, help="Kafka topic for analysis requests")
+@click.option("--result-topic", default="threat-analysis-results", show_default=True, help="Kafka topic for analysis results")
+def worker(bootstrap_servers: str, request_topic: str, result_topic: str):
+    """Start Kafka worker — consumes analysis requests, produces results (Kafka + GraphQL mode)."""
+    from kafka_worker import AnalysisWorker, WorkerConfig
 
-    # Security warning: 0.0.0.0 exposes the service to all network interfaces
-    if host == "0.0.0.0":
-        console.print("\n[bold yellow]⚠  SECURITY WARNING[/]")
-        console.print("[yellow]The API is binding to 0.0.0.0 (all network interfaces).[/]")
-        console.print("[yellow]Ensure your firewall restricts access to trusted IPs only.[/]")
-        console.print("[yellow]For local-only access, use: [cyan]--host 127.0.0.1[/][/]\n")
+    cfg = WorkerConfig(
+        bootstrap_servers=bootstrap_servers,
+        request_topic=request_topic,
+        result_topic=result_topic,
+    )
 
-    console.print(f"[green]Starting SOCup AI service at {host}:{port}...[/]")
-    if not api_only:
-        console.print("[green]Background scheduler is enabled[/]")
-    else:
-        console.print("[dim]Background scheduler is disabled (--api-only)[/]")
-    
-    run_service(host=host, port=port, enable_scheduler=not api_only)
+    console.print("[bold cyan]═════════════════════════════════════════════[/]")
+    console.print("[bold yellow]SOCup AI Kafka Worker[/]")
+    console.print("[bold cyan]═════════════════════════════════════════════[/]")
+    console.print(f"  Bootstrap: [green]{bootstrap_servers}[/]")
+    console.print(f"  Consuming: [green]{request_topic}[/]")
+    console.print(f"  Producing: [green]{result_topic}[/]")
+    console.print()
+    console.print("[dim]Press Ctrl+C to stop.[/]\n")
 
+    worker_instance = AnalysisWorker(config=cfg)
 
-@cli.command("web-build")
-def web_build():
-    """Install web dependencies and build the React frontend."""
-    web_dir = Path(__file__).parent / "web"
-    if not web_dir.exists():
-        console.print("[red]Error:[/] web/ directory not found.")
-        raise SystemExit(1)
-
-    console.print("[cyan]Installing web dependencies…[/]")
-    subprocess.run(["npm", "install"], cwd=web_dir, check=True)
-    console.print("[cyan]Building frontend…[/]")
-    subprocess.run(["npm", "run", "build"], cwd=web_dir, check=True)
-    console.print("[green]✓ Web frontend built successfully.[/]")
-
-
-@cli.command("web-dev")
-@click.option("--host", default="127.0.0.1", show_default=True)
-@click.option("--port", default=5173, show_default=True, type=int)
-def web_dev(host: str, port: int):
-    """Run the Vite development server for the web frontend."""
-    web_dir = Path(__file__).parent / "web"
-    if not web_dir.exists():
-        console.print("[red]Error:[/] web/ directory not found.")
-        raise SystemExit(1)
-
-    console.print("[cyan]Starting Vite dev server…[/]")
-    subprocess.run(["npm", "run", "dev", "--", "--host", host, "--port", str(port)], cwd=web_dir, check=True)
+    try:
+        worker_instance.start()
+        import time
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Shutting down worker...[/]")
+    finally:
+        worker_instance.stop()
+        console.print("[green]✓ Worker stopped.[/]")
 
 
 @cli.command()

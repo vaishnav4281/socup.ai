@@ -28,33 +28,13 @@ The current implementation:
 
 ### Network Security
 
-**⚠️ Critical**: When running `python main.py service`, the API binds to `0.0.0.0:7799`.
+The agent no longer exposes an API server. It runs as a **Kafka worker** (`python main.py worker`) consuming from `threat-analysis-requests` and producing to `threat-analysis-results`.
 
-**Recommended deployment:**
-1. **Firewall rule**: Allow only trusted IPs to reach port 7799
-2. **Private network**: Run inside a private VPC/subnet without public routing
-3. **Localhost only** (development): Run with `--host 127.0.0.1` to bind only to localhost:
-   ```bash
-   uvicorn web.api.server:app --host 127.0.0.1 --port 7799 --reload=false
-   ```
+**API surface has been replaced by Kafka + GraphQL:** The GraphQL Gateway (`:4000`) is the sole external entry point. The agent is only reachable via Kafka topics.
 
-For example in Docker or local dev:
-```python
-# In main.py or a custom runner:
-from web.api.server import run_service
-run_service(host="127.0.0.1", port=7799)  # Localhost only
-```
+### Authentication
 
-### API Authentication
-
-**Current state**: The REST API (`/api/*`) has **no authentication mechanism**. 
-
-**Future mitigation** (not yet implemented):
-- Add API key validation via `Authorization: Bearer <key>` header
-- Implement per-user session tokens stored in Redis or database
-- Restrict endpoints based on API key scope
-
-For now, **assume API access equals full agent control**.
+**Current state**: The GraphQL Gateway has **no authentication mechanism**. It is designed for trusted network use only.
 
 ---
 
@@ -134,24 +114,9 @@ User questions are passed to the LLM but bounded by skill instructions:
 - Query validation before execution
 - Audit logging of all skill invocations
 
-### 6. CORS Restriction ✓
+### 6. CORS via GraphQL Gateway ✓
 
-The web API allows only localhost origins:
-```python
-CORSMiddleware(
-    allow_origins=[
-        "http://localhost:3000",      # Dev frontend
-        "http://localhost:5173",      # Vite frontend
-        "http://127.0.0.1:3000",      # Alt localhost
-        "http://127.0.0.1:5173",      # Alt localhost
-    ],
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["content-type"],
-    allow_credentials=False,
-)
-```
-
-This prevents cross-origin requests from untrusted domains.
+The GraphQL Gateway (Apollo Federation at `:4000`) handles CORS for frontend requests. The agent itself has no HTTP surface — all communication is over Kafka (internal, no CORS needed).
 
 ### 7. OpenSearch Query Safety
 
@@ -202,7 +167,7 @@ pip-audit  # Scan current environment
 ```
 
 Current critical dependencies:
-- `fastapi` — REST framework; keep updated
+- `confluent-kafka` — Kafka client; keep updated
 - `opensearch-py` — Database client; keep updated
 - `langgraph` — Graph orchestration; keep updated
 - `requests` — HTTP client; keep updated
@@ -236,9 +201,6 @@ SOCup AI stores:
 ```bash
 # Delete a single conversation:
 python main.py delete-conversation <conversation_id>
-
-# Or via API:
-DELETE /api/conversations/{conversation_id}
 
 # To reset all data:
 rm -rf data/conversations.db data/runtime_memory.db
