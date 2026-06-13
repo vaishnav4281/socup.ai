@@ -1,0 +1,174 @@
+openapi: "3.1.0"
+info:
+  title: SOCup AI — Event Ingestion API
+  description: |
+    Ingestion endpoint for security events. Accepts events from SDKs, webhooks,
+    OpenTelemetry collectors, and Kafka producers. Validates, normalizes, and
+    publishes to Apache Kafka for downstream processing.
+  version: "1.0.0"
+  contact:
+    name: SOCup AI Team
+
+servers:
+  - url: https://ingest.socup.ai/v1
+    description: Production
+  - url: http://localhost:8080/v1
+    description: Local development
+
+paths:
+  /events:
+    post:
+      summary: Emit a single security event
+      operationId: emitEvent
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Event"
+      responses:
+        "202":
+          description: Event accepted for processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted:
+                    type: boolean
+                    example: true
+                  eventId:
+                    type: string
+                    example: "evt_9a8b7c6d"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid API key
+        "422":
+          description: Unprocessable event payload
+        "429":
+          description: Rate limit exceeded
+
+  /events/batch:
+    post:
+      summary: Emit multiple security events
+      operationId: emitEventBatch
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                events:
+                  type: array
+                  maxItems: 100
+                  items:
+                    $ref: "#/components/schemas/Event"
+      responses:
+        "202":
+          description: Batch accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted:
+                    type: boolean
+                  count:
+                    type: integer
+                  eventIds:
+                    type: array
+                    items:
+                      type: string
+
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    Event:
+      type: object
+      required:
+        - event
+        - userId
+        - severity
+        - timestamp
+      properties:
+        event:
+          type: string
+          description: Dot-notation event name
+          example: "user.login"
+        userId:
+          type: string
+          description: Unique actor identifier
+          example: "usr_123"
+        sessionId:
+          type: string
+          description: Session identifier for correlation
+          example: "sess_abc456"
+        ip:
+          type: string
+          format: ipv4
+          description: Originating IP address
+          example: "192.168.1.10"
+        userAgent:
+          type: string
+          description: Client user-agent string
+          example: "Mozilla/5.0 ..."
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+          description: Event severity level
+        metadata:
+          type: object
+          description: Arbitrary key-value payload (max 4KB)
+          example:
+            mfa_enabled: true
+            location: "us-east-1"
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 event timestamp
+          example: "2026-06-13T10:30:00Z"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "validation_error"
+        message:
+          type: string
+          example: "Field 'severity' must be one of: low, medium, high, critical"
+        detail:
+          type: array
+          items:
+            type: object

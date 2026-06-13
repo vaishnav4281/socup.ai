@@ -58,29 +58,80 @@ Built around distributed systems and event-driven architecture, the platform com
 
 # 🏗️ Architecture
 
-SOCup AI follows an **event-driven microservice architecture** where every security event flows through Apache Kafka and is processed independently by specialized services.
+SOCup AI follows an **event-driven microservice architecture** where security events are ingested through SDKs, webhooks, or OpenTelemetry collectors, validated and normalized, then flow through Apache Kafka to be processed independently by specialized services.
 
 ```
-                           🌐 Next.js Dashboard
-                                    │
-                       GraphQL Queries & Subscriptions
-                                    │
-                     🚪 Apollo GraphQL Federation Gateway
-                                    │
-        ┌──────────────┬──────────────┬──────────────┐
-        │              │              │              │
-   🔐 Auth        ⚠️ Alerts      📜 Timeline    📊 Analytics
-        │              │              │              │
-        └──────────────┴───────┬──────┴──────────────┘
-                               │
-                     📨 Apache Kafka Event Bus
-                               │
-              ┌────────────────┼────────────────┐
-              │                                 │
-      🤖 AI Investigation Agent         📈 Future Services
-      LangGraph • RAG • Skills
-                               │
+                    Customer Applications
+                          │
+     ┌────────────────────┼────────────────────┐
+     │                    │                    │
+  SDK            OpenTelemetry           Webhooks /
+  (Node/Python)   Collector             Kafka Producer
+     │                    │                    │
+     └────────────────────┼────────────────────┘
+                          │
+                  🚪 Ingestion API
+            Validation • Auth • Rate Limit
+                          │
+                      Apache Kafka
+                          │
+         ┌────────────────┼────────────────┐
+         │                │                │
+    ⚠️ Alerts        📜 Timeline      📊 Analytics
+         │                │                │
+         └────────────────┼────────────────┘
+                          │
+            GraphQL Federation Gateway
+                          │
+                    Next.js Dashboard
+                          │
      PostgreSQL • Redis • OpenSearch • Qdrant
+```
+
+---
+
+# 📡 Data Ingestion Pipeline
+
+SOCup AI is designed to integrate with modern applications through multiple ingestion methods. Every incoming event is validated, normalized, and published to Apache Kafka before being consumed by downstream services.
+
+```
+                    Customer Application
+                          │
+     ┌────────────────────┼────────────────────┐
+     │                    │                    │
+  SDK (Node.js)    OpenTelemetry          Webhooks
+  SDK (Python)     Collector
+     │                    │                    │
+     └────────────────────┼────────────────────┘
+                          │
+                  🚪 Ingestion API
+                          │
+            Validation • Auth • Rate Limit
+                          │
+                   Apache Kafka
+          ┌───────────────┼───────────────┐
+          │               │               │
+      Alerts          Timeline       Analytics
+          │               │               │
+      AI Agent      Investigation   Notifications
+          │               │               │
+          └───────────────┼───────────────┘
+                          │
+            GraphQL Federation Gateway
+                          │
+                    Next.js Dashboard
+```
+
+### Sample Event Payload
+
+```json
+{
+  "event":     "user.login",
+  "userId":    "usr_123",
+  "ip":        "192.168.1.10",
+  "severity":  "low",
+  "timestamp": "2026-06-13T10:30:00Z"
+}
 ```
 
 ---
@@ -104,6 +155,16 @@ socup-ai/
 │
 ├── agents/
 │   └── security-agent/      # LangGraph + RAG Engine
+│
+├── sdk/                     # 📦 Event Ingestion SDKs
+│   ├── node/                # Node.js SDK (in development)
+│   ├── python/              # Python SDK (in development)
+│   └── shared/              # Shared event schema
+│
+├── ingestion/               # 📥 Ingestion Pipeline
+│   ├── api/                 # REST API + OpenAPI spec
+│   ├── validator/           # Event validation
+│   └── normalizer/          # Event normalization & enrichment
 │
 ├── libs/
 │   ├── graphql/
@@ -235,14 +296,28 @@ to build an intelligent and scalable security investigation platform.
 
 ---
 
-# 🔮 Future Enhancements
+# 🔮 Upcoming Features
 
-* 🕸️ Neo4j Attack Graph
-* ⚡ Event Replay Engine
-* 🤝 Multi-Agent Collaboration
-* 🔍 Distributed Tracing
-* ☁️ Kubernetes Production Deployment
-* 🏢 Multi-Tenant Organizations
+### 📥 Event Ingestion
+- [ ] Event Ingestion API (REST + gRPC)
+- [ ] Node.js SDK with automatic event capture
+- [ ] Python SDK with framework integrations (Django, FastAPI)
+- [ ] OpenTelemetry collector for seamless observability integration
+- [ ] Webhook receiver for third-party tools
+- [ ] Kafka-native producer SDK
+
+### 🕸️ Investigation & Analysis
+- [ ] Neo4j Attack Graph with D3.js visualization
+- [ ] Multi-agent AI collaboration (Supervisor → 6 specialized analysts)
+- [ ] Event Replay Engine for post-mortem analysis
+- [ ] GraphQL Subscriptions via WebSocket (replace polling)
+
+### 🛡️ Platform
+- [ ] OpenTelemetry distributed tracing (Jaeger/Tempo)
+- [ ] PostgreSQL persistence (SQLAlchemy + Alembic)
+- [ ] Kafka dead letter queues with exponential backoff retry
+- [ ] Kubernetes production deployment
+- [ ] Multi-tenant organizations with RBAC
 
 ---
 

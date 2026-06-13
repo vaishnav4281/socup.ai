@@ -372,6 +372,24 @@ Prometheus + Grafana for infrastructure monitoring. GraphQL Subscriptions for re
 
 ## 10. System Design Deep Dive
 
+### Data Ingestion Architecture
+
+The ingestion layer is the entry point for all security events into the SOCup AI platform. It supports four integration patterns:
+
+```
+Source                  Method              Protocol
+──────────────────────────────────────────────────────
+Application Code        SDK (Node/Python)   HTTP/gRPC
+Existing Monitoring     OpenTelemetry       OTLP
+Third-party Tools       Webhooks            HTTP POST
+Direct Integration     Kafka Producer      Kafka-native
+```
+
+Every event passes through a three-stage pipeline:
+1. **Validation** — JSON Schema conformance, required fields, severity enum check, timestamp format
+2. **Authentication** — API key verification, rate limiting per key
+3. **Normalization** — IP enrichment, User-Agent parsing, timestamp conversion, canonical field mapping
+
 ### Scalability Strategy
 ```
 Scale Dimension        Approach
@@ -385,18 +403,19 @@ Frontend               Next.js ISR + CDN caching
 
 ### Data Flow (End-to-End)
 ```
-Event (Login) 
-  → Kafka Topic: events.auth 
-    → Risk Engine (consumer) 
-      → Queries Qdrant for behavior baseline 
-        → Publishes Alert to events.alerts 
-          → AI Agent (consumer) 
-            → LangGraph: supervisor → skill execution 
-              → RAG context from OpenSearch 
-                → LLM verdict
-                  → Kafka: events.verdict
-                    → Gateway (subscriber via Kafka → WebSocket)
-                      → Dashboard (real-time update)
+Customer App (SDK / Webhook / OpenTelemetry)
+  → Ingestion API (validation, auth, rate limiting)
+    → Kafka Topic: events.auth
+      → Risk Engine (consumer)
+        → Queries Qdrant for behavior baseline
+          → Publishes Alert to events.alerts
+            → AI Agent (consumer)
+              → LangGraph: supervisor → skill execution
+                → RAG context from OpenSearch
+                  → LLM verdict
+                    → Kafka: events.verdict
+                      → Gateway (subscriber via Kafka → WebSocket)
+                        → Dashboard (real-time update)
 ```
 
 ### Database Schema Design
@@ -576,6 +595,22 @@ socup.ai/
 │       ├── requirements.txt
 │       └── docker-compose.yml        # Worker + Kafka for agent
 │
+├── sdk/                               # 📦 Event Ingestion SDKs
+│   ├── node/
+│   │   └── README.md                 # Node.js SDK (in development)
+│   ├── python/
+│   │   └── README.md                 # Python SDK (in development)
+│   └── shared/
+│       └── README.md                 # Shared event schema
+│
+├── ingestion/                         # 📥 Ingestion Pipeline
+│   ├── api/
+│   │   └── openapi.yaml              # REST API specification
+│   ├── validator/
+│   │   └── README.md                 # Event validation rules
+│   └── normalizer/
+│       └── README.md                 # Event normalization & enrichment
+│
 ├── docker-compose.yml                # Full infra: Kafka, OpenSearch, Qdrant, etc.
 ├── DETAILS.md                        # This file — full spec & design
 ├── WORKFLOW.md                       # External system integration guide
@@ -592,7 +627,7 @@ socup.ai/
 
 | Capability | Evidence in Codebase |
 |---|---|
-| **Event-Driven Architecture** | Kafka as sole inter-service bus; no REST between services; KRaft mode (no ZK) |
+| **Event-Driven Architecture** | Kafka as sole inter-service bus; no REST between services; KRaft mode (no ZK); ingestion pipeline design with SDKs, webhooks, OpenTelemetry |
 | **GraphQL Federation** | Apollo Gateway composing subgraphs; Strawberry Python subgraphs; WebSocket subscriptions |
 | **Agentic AI (LangGraph)** | Multi-round supervisor planning; skill routing; question grounding; confidence scoring; streaming tokens |
 | **RAG Pipeline** | Vector embeddings in OpenSearch; KNN similarity search; query repair; context injection |
