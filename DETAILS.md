@@ -325,11 +325,15 @@ Prometheus + Grafana for infrastructure monitoring. GraphQL Subscriptions for re
 **Challenge**: Keeping PostgreSQL, Redis, OpenSearch, and Qdrant in sync without distributed transactions.
 **Solution**: Eventual consistency model via Kafka events. Each service owns its data and publishes state changes.
 
-### 5. GraphQL Federation Schema Drift
+### 5. Frontend UX Resilience & Loading States
+**Challenge**: Pages appeared broken during initial load and when backends were offline — blank panels, no visual feedback, confusing empty states.
+**Solution**: Implemented reusable `Skeleton` component with specialized variants (KPI cards, alerts, timeline rows, table rows) and `EmptyState` component with SVG icons (shield, timeline, search, inbox). Every page transitions through: `loading (skeleton) → empty (illustration + CTA) → data`. Pages load instantly with inline mock data, then silently upgrade to live data when the gateway becomes reachable.
+
+### 6. GraphQL Federation Schema Drift
 **Challenge**: Subgraphs evolving independently could break the gateway schema.
 **Solution**: IntrospectAndCompose with 2-second polling detects schema changes. Gateway retries on failure with exponential backoff.
 
-### 6. Path Traversal Security
+### 7. Path Traversal Security
 **Challenge**: API endpoints accepting file paths from users.
 **Solution**: Strict input validation (alphanumeric only for IDs), resolved path verification against safe directory boundaries, 403 on violation.
 
@@ -506,20 +510,22 @@ socup.ai/
 │   └── web/                          # Next.js Frontend Dashboard
 │       ├── src/
 │       │   ├── app/
-│       │   │   ├── page.tsx          # Executive Dashboard (live metrics, AI console)
+│       │   │   ├── page.tsx          # Executive Dashboard (live metrics, AI console, skeleton states)
 │       │   │   ├── layout.tsx        # Root layout (sidebar + header)
-│       │   │   ├── globals.css       # Tailwind + custom styles
+│       │   │   ├── globals.css       # Tailwind + custom styles + shimmer animation
 │       │   │   ├── timeline/
-│       │   │   │   └── page.tsx      # Attack timeline viewer
+│       │   │   │   └── page.tsx      # Attack timeline viewer (skeleton, empty state)
 │       │   │   ├── investigations/
-│       │   │   │   └── page.tsx      # Investigation workspace + AI agent console
+│       │   │   │   └── page.tsx      # Investigation workspace + AI agent console (skeleton)
 │       │   │   └── threat-intel/
-│       │   │       └── page.tsx      # MITRE ATT&CK + IOC browser
+│       │   │       └── page.tsx      # MITRE ATT&CK + IOC browser (skeleton, empty state)
 │       │   ├── lib/
 │       │   │   └── graphql.ts        # Shared GraphQL client with mock data fallback
 │       │   └── components/
 │       │       ├── Sidebar.tsx        # Navigation sidebar
-│       │       └── ConnectionStatus.tsx  # Live/reachable/degraded indicator
+│       │       ├── ConnectionStatus.tsx  # 3-state live/reachable/degraded indicator
+│       │       ├── Skeleton.tsx       # Reusable skeleton loaders (Kpi, Alert, Timeline, Table)
+│       │       └── EmptyState.tsx     # Empty state with SVG illustrations (shield, timeline, search, inbox)
 │       ├── package.json
 │       └── next.config.js
 │
@@ -591,7 +597,7 @@ socup.ai/
 | **Agentic AI (LangGraph)** | Multi-round supervisor planning; skill routing; question grounding; confidence scoring; streaming tokens |
 | **RAG Pipeline** | Vector embeddings in OpenSearch; KNN similarity search; query repair; context injection |
 | **Full-Stack Ownership** | Next.js App Router → GraphQL → Kafka → Python agents → OpenSearch |
-| **Graceful Degradation** | Frontend falls back to mock data when any backend is offline; three-state connection indicator |
+| **Graceful Degradation** | Frontend falls back to mock data when any backend is offline; three-state connection indicator; skeleton loading states; empty state illustrations with contextual CTAs |
 | **Plugin Architecture** | Hot-pluggable skills with manifest.yaml, instruction.md, hooks, LangGraph sub-graphs |
 | **Security** | Path traversal prevention; CORS; secrets isolation in .env; input sanitization on all endpoints |
 | **Testing** | 443 pytest tests; mock LLM + mock OpenSearch for deterministic AI testing; coverage reporting |

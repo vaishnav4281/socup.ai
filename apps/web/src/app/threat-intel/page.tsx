@@ -1,5 +1,7 @@
 "use client";
 import React, { useState } from "react";
+import EmptyState from "@/components/EmptyState";
+import { TableRowSkeleton } from "@/components/Skeleton";
 
 const MITRE_TACTICS = [
   { id: "TA0001", name: "Initial Access",         techniques: ["T1566 Phishing", "T1190 Exploit Public App", "T1078 Valid Accounts"] },
@@ -27,12 +29,28 @@ const THREAT_COLOR: Record<string, string> = {
   LOW:      "text-gray-400",
 };
 
+function SkeletonTacticCard() {
+  return (
+    <div className="p-4 rounded-lg border border-white/8 bg-white/2 space-y-3">
+      <div className="animate-pulse h-3 w-14 bg-white/10 rounded" />
+      <div className="animate-pulse h-4 w-24 bg-white/10 rounded" />
+      <div className="animate-pulse h-3 w-20 bg-white/10 rounded" />
+    </div>
+  );
+}
+
 export default function ThreatIntelPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
   const filtered = IOC_DATA.filter(d =>
     !search || d.ioc.toLowerCase().includes(search.toLowerCase()) || d.label.toLowerCase().includes(search.toLowerCase())
   );
+
+  React.useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6 fade-in">
@@ -44,24 +62,30 @@ export default function ThreatIntelPage() {
       {/* MITRE ATT&CK */}
       <div className="panel p-5">
         <h2 className="text-sm font-semibold text-white mb-4">MITRE ATT&CK Coverage Map</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {MITRE_TACTICS.map(t => (
-            <div key={t.id}
-              onClick={() => setSelected(selected === t.id ? null : t.id)}
-              className={`p-4 rounded-lg border cursor-pointer transition-all ${selected === t.id ? "border-blue-500/40 bg-blue-500/10" : "border-white/8 bg-white/2 hover:bg-white/5 hover:border-white/15"}`}>
-              <p className="text-xs text-gray-500 font-mono">{t.id}</p>
-              <p className="text-sm text-white font-medium mt-1">{t.name}</p>
-              <p className="text-xs text-gray-600 mt-1">{t.techniques.length} techniques</p>
-              {selected === t.id && (
-                <div className="mt-3 space-y-1 pt-3 border-t border-white/8">
-                  {t.techniques.map(tech => (
-                    <div key={tech} className="text-xs text-blue-300 font-mono bg-blue-500/10 rounded px-2 py-1">{tech}</div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[...Array(6)].map((_, i) => <SkeletonTacticCard key={i} />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {MITRE_TACTICS.map(t => (
+              <div key={t.id}
+                onClick={() => setSelected(selected === t.id ? null : t.id)}
+                className={`p-4 rounded-lg border cursor-pointer transition-all ${selected === t.id ? "border-blue-500/40 bg-blue-500/10" : "border-white/8 bg-white/2 hover:bg-white/5 hover:border-white/15"}`}>
+                <p className="text-xs text-gray-500 font-mono">{t.id}</p>
+                <p className="text-sm text-white font-medium mt-1">{t.name}</p>
+                <p className="text-xs text-gray-600 mt-1">{t.techniques.length} techniques</p>
+                {selected === t.id && (
+                  <div className="mt-3 space-y-1 pt-3 border-t border-white/8">
+                    {t.techniques.map(tech => (
+                      <div key={tech} className="text-xs text-blue-300 font-mono bg-blue-500/10 rounded px-2 py-1">{tech}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* IOCs */}
@@ -71,18 +95,25 @@ export default function ThreatIntelPage() {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search IOC..."
             className="bg-white/3 border border-white/10 rounded px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/60 w-52"/>
         </div>
-        <div className="space-y-2">
-          {filtered.length === 0 && <p className="text-gray-600 text-sm">No IOCs match your search.</p>}
-          {filtered.map(d => (
-            <div key={d.ioc} className="flex items-center gap-4 p-3 rounded-lg bg-white/2 border border-white/6 hover:bg-white/5 transition-all text-xs">
-              <span className="font-mono text-gray-300 flex-1 truncate">{d.ioc}</span>
-              <span className="text-gray-500 w-16 shrink-0">{d.type}</span>
-              <span className="text-gray-500 w-12 shrink-0">{d.confidence}</span>
-              <span className={`font-semibold w-16 shrink-0 ${THREAT_COLOR[d.threat] || "text-gray-400"}`}>{d.threat}</span>
-              <span className="text-gray-500 flex-1 truncate hidden md:block">{d.label}</span>
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div className="space-y-2">
+            {[...Array(5)].map((_, i) => <TableRowSkeleton key={i} />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState icon="search" title="No IOCs Found" description={search ? "No indicators match your search. Try a different query." : "No indicators of compromise have been ingested yet."} />
+        ) : (
+          <div className="space-y-2">
+            {filtered.map(d => (
+              <div key={d.ioc} className="flex items-center gap-4 p-3 rounded-lg bg-white/2 border border-white/6 hover:bg-white/5 transition-all text-xs">
+                <span className="font-mono text-gray-300 flex-1 truncate">{d.ioc}</span>
+                <span className="text-gray-500 w-16 shrink-0">{d.type}</span>
+                <span className="text-gray-500 w-12 shrink-0">{d.confidence}</span>
+                <span className={`font-semibold w-16 shrink-0 ${THREAT_COLOR[d.threat] || "text-gray-400"}`}>{d.threat}</span>
+                <span className="text-gray-500 flex-1 truncate hidden md:block">{d.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import type { TimelineEvent, ConnectionState } from "@/lib/graphql";
 import { fetchTimeline, addTimelineEvent } from "@/lib/graphql";
 import ConnectionStatus from "@/components/ConnectionStatus";
+import EmptyState from "@/components/EmptyState";
+import { TimelineSkeleton } from "@/components/Skeleton";
 
 const EVENT_COLORS: Record<string, string> = {
   LOGIN:                "text-blue-400",
@@ -25,6 +27,7 @@ const MOCK_EVENTS: TimelineEvent[] = [
 export default function TimelinePage() {
   const [events, setEvents] = useState<TimelineEvent[]>(MOCK_EVENTS);
   const [conn, setConn] = useState<ConnectionState>("offline");
+  const [loading, setLoading] = useState(true);
   const [newType, setNewType] = useState("LOGIN");
   const [newActor, setNewActor] = useState("");
 
@@ -36,8 +39,9 @@ export default function TimelinePage() {
 
   useEffect(() => {
     const t = setInterval(refresh, 3000);
+    Promise.resolve().then(() => { refresh(); setLoading(false); });
     return () => clearInterval(t);
-  }, [refresh]);
+  }, []);
 
   const inject = async () => {
     if (!newActor.trim()) return;
@@ -77,27 +81,34 @@ export default function TimelinePage() {
 
       <div className="panel p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-white">{events.length} Recorded Events</h2>
+          <h2 className="text-sm font-semibold text-white">{loading ? "Loading..." : `${events.length} Recorded Events`}</h2>
           <span className="text-xs text-gray-600 font-mono">{conn === "offline" ? "demo data" : conn === "degraded" ? "live + cached" : "live"}</span>
         </div>
-        <div className="relative">
-          <div className="absolute left-4 top-0 bottom-0 w-px bg-white/8"/>
-          <div className="space-y-3 pl-10">
-            {events.length === 0 && <p className="text-gray-600 text-sm pl-4">No events recorded.</p>}
-            {[...events].reverse().map((evt, i) => (
-              <div key={evt.id} className="relative fade-in">
-                <div className={`absolute -left-6 top-3 w-2 h-2 rounded-full border ${i === 0 ? "bg-blue-500 border-blue-400" : "bg-gray-700 border-gray-600"}`}/>
-                <div className="panel p-3 hover:bg-white/5 transition-all">
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs font-semibold font-mono ${EVENT_COLORS[evt.eventType] || "text-gray-400"}`}>{evt.eventType}</span>
-                    <span className="text-xs text-gray-600 tabular-nums">{new Date(evt.timestamp).toLocaleString()}</span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">Actor: <span className="text-gray-300">{evt.actor}</span></p>
-                </div>
-              </div>
-            ))}
+        {loading ? (
+          <div className="pl-10 space-y-3">
+            {[...Array(5)].map((_, i) => <TimelineSkeleton key={i} />)}
           </div>
-        </div>
+        ) : events.length === 0 ? (
+          <EmptyState icon="timeline" title="No Events Recorded" description="Inject a test event above, or wait for live security events to stream in from the monitoring infrastructure." action={{ label: "Log First Event", onClick: () => setNewActor("admin") }} />
+        ) : (
+          <div className="relative">
+            <div className="absolute left-4 top-0 bottom-0 w-px bg-white/8"/>
+            <div className="space-y-3 pl-10">
+              {[...events].reverse().map((evt, i) => (
+                <div key={evt.id} className="relative fade-in">
+                  <div className={`absolute -left-6 top-3 w-2 h-2 rounded-full border ${i === 0 ? "bg-blue-500 border-blue-400" : "bg-gray-700 border-gray-600"}`}/>
+                  <div className="panel p-3 hover:bg-white/5 transition-all">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-semibold font-mono ${EVENT_COLORS[evt.eventType] || "text-gray-400"}`}>{evt.eventType}</span>
+                      <span className="text-xs text-gray-600 tabular-nums">{new Date(evt.timestamp).toLocaleString()}</span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">Actor: <span className="text-gray-300">{evt.actor}</span></p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

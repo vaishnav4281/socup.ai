@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import type { Alert, TimelineEvent, Stats, ConnectionState } from "@/lib/graphql";
 import { fetchDashboard, analyzeThreat } from "@/lib/graphql";
 import ConnectionStatus from "@/components/ConnectionStatus";
+import EmptyState from "@/components/EmptyState";
+import { KpiSkeleton, AlertSkeleton, TimelineSkeleton } from "@/components/Skeleton";
 
 const MOCK_ALERTS: Alert[] = [
   { id: "1", severity: "CRITICAL", message: "Suspicious login from known C2 infrastructure IP 185.xxx.xxx.50" },
@@ -22,6 +24,7 @@ export default function Dashboard() {
   const [timeline, setTimeline] = useState<TimelineEvent[]>(MOCK_TIMELINE);
   const [stats, setStats] = useState<Stats>({ evaluated: 8400000, actions: 1043, score: 78 });
   const [conn, setConn] = useState<ConnectionState>("offline");
+  const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
   const [logs, setLogs] = useState<string[]>([
     "[init] SOCup AI Agent — boot sequence started...",
@@ -39,8 +42,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     const t = setInterval(refresh, 5000);
+    Promise.resolve().then(() => { refresh(); setLoading(false); });
     return () => clearInterval(t);
-  }, [refresh]);
+  }, []);
 
   const runAnalysis = async () => {
     if (!input.trim()) return;
@@ -71,50 +75,72 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Active Threats" value={alerts.length} sub={`${criticalCount} CRITICAL · ${highCount} HIGH`} danger={alerts.length > 0} />
-        <KpiCard label="Events Analyzed" value={`${(stats.evaluated / 1_000_000).toFixed(1)}M`} sub="~12k events/sec" />
-        <KpiCard label="Agent Actions" value={stats.actions} sub="Autonomous executions" />
-        <KpiCard label="Risk Score" value={`${stats.score}/100`} sub={stats.score > 80 ? "Elevated — review required" : "Within threshold"} warn={stats.score > 80} />
+        {loading ? (
+          <>
+            <KpiSkeleton /><KpiSkeleton /><KpiSkeleton /><KpiSkeleton />
+          </>
+        ) : (
+          <>
+            <KpiCard label="Active Threats" value={alerts.length} sub={`${criticalCount} CRITICAL · ${highCount} HIGH`} danger={alerts.length > 0} />
+            <KpiCard label="Events Analyzed" value={`${(stats.evaluated / 1_000_000).toFixed(1)}M`} sub="~12k events/sec" />
+            <KpiCard label="Agent Actions" value={stats.actions} sub="Autonomous executions" />
+            <KpiCard label="Risk Score" value={`${stats.score}/100`} sub={stats.score > 80 ? "Elevated — review required" : "Within threshold"} warn={stats.score > 80} />
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 panel p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-white">Attack Timeline</h2>
-            <span className="text-xs text-gray-600 font-mono">{timeline.length} events</span>
+            <span className="text-xs text-gray-600 font-mono">{loading ? "..." : `${timeline.length} events`}</span>
           </div>
-          <div className="space-y-2 overflow-y-auto max-h-72">
-            {timeline.length === 0 && <p className="text-gray-600 text-sm">No events recorded.</p>}
-            {[...timeline].reverse().map(evt => (
-              <div key={evt.id} className="flex items-center gap-4 p-2.5 rounded-lg bg-white/3 hover:bg-white/6 transition-all border border-white/5 text-xs group">
-                <span className="text-blue-400 font-mono font-semibold w-28 shrink-0">{evt.eventType}</span>
-                <span className="text-gray-400 flex-1">{evt.actor}</span>
-                <span className="text-gray-600 tabular-nums">{new Date(evt.timestamp).toLocaleTimeString()}</span>
-              </div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="space-y-2">
+              {[...Array(4)].map((_, i) => <TimelineSkeleton key={i} />)}
+            </div>
+          ) : timeline.length === 0 ? (
+            <EmptyState icon="timeline" title="No Events Recorded" description="Security events will appear here once monitoring begins or when the timeline service connects." />
+          ) : (
+            <div className="space-y-2 overflow-y-auto max-h-72">
+              {[...timeline].reverse().map(evt => (
+                <div key={evt.id} className="flex items-center gap-4 p-2.5 rounded-lg bg-white/3 hover:bg-white/6 transition-all border border-white/5 text-xs group">
+                  <span className="text-blue-400 font-mono font-semibold w-28 shrink-0">{evt.eventType}</span>
+                  <span className="text-gray-400 flex-1">{evt.actor}</span>
+                  <span className="text-gray-600 tabular-nums">{new Date(evt.timestamp).toLocaleTimeString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="panel p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-white">Live Anomalies</h2>
-            <div className={`relative flex h-2.5 w-2.5 ${alerts.length === 0 ? "opacity-0" : ""}`}>
+            <div className={`relative flex h-2.5 w-2.5 ${alerts.length === 0 || loading ? "opacity-0" : ""}`}>
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"/>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"/>
             </div>
           </div>
-          <div className="space-y-2 overflow-y-auto max-h-72">
-            {alerts.length === 0 && <p className="text-gray-600 text-sm">All clear — no anomalies detected.</p>}
-            {alerts.map(a => (
-              <div key={a.id} className={`p-3 rounded-lg text-xs border ${a.severity === "CRITICAL" ? "border-red-500/20 bg-red-500/6 glow-red" : a.severity === "HIGH" ? "border-orange-500/20 bg-orange-500/6" : "border-white/5 bg-white/3"}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`font-semibold ${a.severity === "CRITICAL" ? "text-red-400" : a.severity === "HIGH" ? "text-orange-400" : "text-gray-400"}`}>{a.severity}</span>
-                  <span className="text-gray-600 tabular-nums">{new Date().toLocaleTimeString()}</span>
+          {loading ? (
+            <div className="space-y-2">
+              {[...Array(3)].map((_, i) => <AlertSkeleton key={i} />)}
+            </div>
+          ) : alerts.length === 0 ? (
+            <EmptyState icon="shield" title="All Clear" description="No anomalies detected. Your infrastructure looks healthy." />
+          ) : (
+            <div className="space-y-2 overflow-y-auto max-h-72">
+              {alerts.map(a => (
+                <div key={a.id} className={`p-3 rounded-lg text-xs border ${a.severity === "CRITICAL" ? "border-red-500/20 bg-red-500/6 glow-red" : a.severity === "HIGH" ? "border-orange-500/20 bg-orange-500/6" : "border-white/5 bg-white/3"}`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`font-semibold ${a.severity === "CRITICAL" ? "text-red-400" : a.severity === "HIGH" ? "text-orange-400" : "text-gray-400"}`}>{a.severity}</span>
+                    <span className="text-gray-600 tabular-nums">{new Date().toLocaleTimeString()}</span>
+                  </div>
+                  <p className="text-gray-300">{a.message}</p>
                 </div>
-                <p className="text-gray-300">{a.message}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

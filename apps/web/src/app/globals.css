@@ -32,3 +32,7 @@ body {
 
 /* Pulse dot */
 @keyframes pulse-ring { 0%,100%{ opacity:1; transform:scale(1);} 50%{ opacity:0.5; transform:scale(1.5);} }
+
+/* Skeleton shimmer */
+@keyframes shimmer { 0% { opacity: 0.4; } 50% { opacity: 0.8; } 100% { opacity: 0.4; } }
+.animate-shimmer { animation: shimmer 1.8s ease-in-out infinite; }
