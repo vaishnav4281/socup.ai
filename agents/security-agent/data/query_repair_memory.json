@@ -1,0 +1,105 @@
+{
+  "repairs": {
+    "parsing_exception|parsing_exception: something wrong": {
+      "error": "parsing_exception: something wrong",
+      "original": {
+        "query": {
+          "bool": {
+            "must": []
+          }
+        }
+      },
+      "fixed": {
+        "query": {
+          "bool": {
+            "must": [
+              {
+                "term": {
+                  "field": "value"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "timestamp": "2026-06-13T15:16:12.275741"
+    },
+    "parsing_exception|parsing_exception": {
+      "error": "parsing_exception",
+      "original": {
+        "query": {
+          "bool": {
+            "should": "invalid"
+          }
+        }
+      },
+      "fixed": {
+        "query": {
+          "bool": {
+            "should": []
+          }
+        }
+      },
+      "timestamp": "2026-06-13T15:16:12.297462"
+    },
+    "parsing_exception|query malformed in index test-index: parsing_exception": {
+      "error": "Query malformed in index test-index: parsing_exception",
+      "original": {
+        "query": {
+          "bool": {
+            "should": "invalid"
+          }
+        }
+      },
+      "fixed": {
+        "query": {
+          "bool": {
+            "should": [
+              "invalid"
+            ]
+          }
+        }
+      },
+      "timestamp": "2026-06-13T15:16:12.303655"
+    },
+    "unknown_error|for input string: \"iran\"": {
+      "error": "Query malformed in index logstash*: For input string: \"Iran\"",
+      "original": {
+        "query": {
+          "bool": {
+            "filter": {
+              "range": {
+                "geoip.country_code2.keyword": {
+                  "gte": "Iran"
+                }
+              }
+            }
+          }
+        }
+      },
+      "fixed": {
+        "query": {
+          "bool": {
+            "filter": [
+              {
+                "match": {
+                  "geoip.country_code2.keyword": "Iran"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "timestamp": "2026-06-13T15:16:13.226372"
+    }
+  },
+  "field_types": {
+    "source": "unknown",
+    "source.ip": "ip",
+    "source.port": "integer",
+    "geoip": "unknown",
+    "geoip.country_code2": "keyword"
+  },
+  "error_patterns": {},
+  "last_updated": "2026-06-13T15:16:13.226481"
+}

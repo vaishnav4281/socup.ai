@@ -1,0 +1,25 @@
+{
+  "name": "sentinel-gateway",
+  "version": "1.0.0",
+  "description": "GraphQL Federation Gateway for SOCup AI",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "nodemon -x ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@apollo/gateway": "^2.7.0",
+    "@apollo/server": "^4.10.0",
+    "graphql": "^16.8.1",
+    "graphql-ws": "^5.15.0",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "@types/ws": "^8.5.10",
+    "nodemon": "^3.0.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

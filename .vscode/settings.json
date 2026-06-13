@@ -1,0 +1,11 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/.venv/lib/python3.12/site-packages",
+    "${workspaceFolder}/services/alerts",
+    "${workspaceFolder}/services/timeline",
+    "${workspaceFolder}/agents/security-agent"
+  ],
+  "css.customData": [".vscode/tailwindcss.json"],
+  "css.lint.unknownAtRules": "ignore"
+}

@@ -1,0 +1,52 @@
+agent:
+  name: SOCup AI
+  version: 1.0.0
+  skills_dir: skills
+  log_level: INFO
+scheduler:
+  heartbeat_interval_seconds: 60
+  memory_build_interval_hours: 6
+db:
+  provider: opensearch
+  host: localhost
+  port: 9200
+  index_prefix: socup-ai
+  vector_index: socup-ai-vectors
+  anomaly_index: socup-ai-anomalies
+  logs_index: logstash-*
+  use_ssl: true
+  verify_certs: false
+  # Credentials loaded from .env: DB_USERNAME, DB_PASSWORD
+llm:
+  provider: ollama
+  ollama_base_url: http://localhost:11434
+  # Current example runtime models:
+  ollama_model: qwen2.5:7b-instruct-q4_K_M
+  # Lightweight local model used in the current example config for auxiliary tasks.
+  ollama_embed_model: nomic-embed-text:latest
+  temperature: 0.2
+  max_tokens: 65536
+memory:
+  query_repair_max_repairs: 128
+  query_repair_max_field_types: 512
+rag:
+  embedding_model: nomic-embed-text:latest
+  top_k: 5
+  similarity_threshold: 0.65
+anomaly:
+  poll_interval_seconds: 60
+  severity_threshold: 0.7
+  max_findings_per_poll: 50
+geoip:
+  enabled: true
+  # Local path where GeoLite2-City.mmdb will be stored
+  db_path: data/geoip/GeoLite2-City.mmdb
+  # MaxMind edition ID to download
+  edition_id: GeoLite2-City
+  # How many days old the DB can be before refresh (default: 7)
+  # Skill runs on Tu/Fr to match MaxMind's release schedule
+  update_interval_days: 7
+  # MaxMind official API endpoint for downloads
+  download_url: https://download.maxmind.com/app/geoip_download
+  timeout_seconds: 60
+  # License key loaded from .env: MAXMIND_LICENSE_KEY

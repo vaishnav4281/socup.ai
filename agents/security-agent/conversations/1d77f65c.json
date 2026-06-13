@@ -1,0 +1,17 @@
+[
+  {
+    "role": "user",
+    "content": "test stream",
+    "timestamp": "2026-06-13T09:46:10.726965+00:00"
+  },
+  {
+    "role": "assistant",
+    "content": "ThoughtAnswer",
+    "timestamp": "2026-06-13T09:46:10.726976+00:00",
+    "routing_skills": [
+      "opensearch_querier"
+    ],
+    "routing_reasoning": "",
+    "skill_results": {}
+  }
+]

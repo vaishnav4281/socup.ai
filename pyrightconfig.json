@@ -1,0 +1,10 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "extraPaths": [
+    ".venv/lib/python3.12/site-packages",
+    "services/alerts",
+    "services/timeline",
+    "agents/security-agent"
+  ]
+}
